@@ -13,6 +13,8 @@ contract Auction
 
     address private winner;
 
+    uint8 constant public BET_STEP_PERCENTAGE = 5;
+
     uint64 public timeStampBegin;
     uint64 public timeStampEnd;
 
@@ -47,15 +49,27 @@ contract Auction
     }
 
     function myBet() isActiveTime isApprovedInTime 
-        external view returns(uint)
+        public view returns(uint)
     {
         return bets[msg.sender];
     }
 
     function winnerBet() isActiveTime isApprovedInTime 
-        external view returns(uint)
+        public view returns(uint)
     {
         return bets[winner];
+    }
+
+    function increaseMyBet() isActiveTime isApprovedInTime external payable
+    {
+        uint newBet = myBet() + msg.value;
+
+        uint nextMinimalBet = winnerBet() * ((100 + BET_STEP_PERCENTAGE) / 100);
+
+        require(newBet >= nextMinimalBet, "New bet is too low");
+
+        bets[msg.sender] = newBet;
+        winner = msg.sender;
     }
 
     function isStartTimePassed() private view returns(bool)
