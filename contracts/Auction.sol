@@ -11,28 +11,29 @@ contract Auction
 
     mapping(address => uint) private bets;
 
+    address private winner;
+
     uint64 public timeStampBegin;
     uint64 public timeStampEnd;
 
     bool public isApproved;
-
-    uint public minimalPrice;
     
     constructor(IERC20 _token, uint64 _timeStampBegin, uint64 _timeStampEnd,
-        uint _minimalPrice)
+        uint _startPrice)
     {
-        owner = msg.sender;
-        token = _token;
-
         require(_timeStampBegin > block.timestamp, "Can't set auction start time"
             "in the past");
         require(_timeStampBegin < _timeStampEnd, "Can't set end time less then"
             "start time");
 
+        owner = msg.sender;
+        token = _token;
+
         timeStampBegin = _timeStampBegin;
         timeStampEnd = _timeStampEnd;
 
-        minimalPrice = _minimalPrice;
+        winner = owner;
+        bets[owner] = _startPrice;
     }
 
     function approve() external
@@ -45,9 +46,16 @@ contract Auction
         isApproved = true;
     }
 
-    function myBet() isActiveTime external view returns(uint)
+    function myBet() isActiveTime isApprovedInTime 
+        external view returns(uint)
     {
         return bets[msg.sender];
+    }
+
+    function winnerBet() isActiveTime isApprovedInTime 
+        external view returns(uint)
+    {
+        return bets[winner];
     }
 
     function isStartTimePassed() private view returns(bool)
