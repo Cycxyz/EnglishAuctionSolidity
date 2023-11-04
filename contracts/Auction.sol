@@ -4,22 +4,51 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Auction
 {
+    uint32 constant MINIMAL_AMOUNT = 1000; 
+
     address private owner;
     IERC20 private token;
 
     uint64 timeStampBegin;
     uint64 timeStampEnd;
+
+    bool isApproved;
     
     constructor(IERC20 _token, uint64 _timeStampBegin, uint64 _timeStampEnd)
     {
         owner = msg.sender;
         token = _token;
 
+        require(_timeStampBegin < block.timestamp, "Can't set auction start time"
+            "in the past");
+        require(_timeStampBegin < _timeStampEnd, "Can't set end time less then"
+            "start time");
+
         timeStampBegin = _timeStampBegin;
         timeStampEnd = _timeStampEnd;
     }
 
-    modifier onlyOwner
+    function approve() external
+    {
+        require(!isApproved, "Already approved");
+        require(!isStartTimePassed(), 
+            "Can't approve anymore, start time passed");
+        require(token.balanceOf(address(this)) >= MINIMAL_AMOUNT, 
+            "Money weren't transfered");
+        isApproved = true;
+    }
+
+    function isStartTimePassed() private view returns(bool)
+    {
+        return block.timestamp >= timeStampBegin;
+    }
+
+    function isEndTimePassed() private view returns(bool)
+    {
+        return block.timestamp >= timeStampEnd;
+    }
+
+    modifier isOwner
     {
         require(owner == msg.sender, "only owner can call that function");
         _;
@@ -27,8 +56,15 @@ contract Auction
 
     modifier isActiveTime
     {
-        require(block.timestamp >= timeStampBegin, "Auction is not started still");
-        require(block.timestamp < timeStampEnd, "Auction is already finished");
+        require(isStartTimePassed(), "Auction is not started still");
+        require(isEndTimePassed(), "Auction is already finished");
+        _;
+    }
+
+    modifier isApprovedInTime
+    {
+        require(isApproved && isStartTimePassed(),
+         "Auction wasn't started because wasn't approved in time");
         _;
     }
 }
