@@ -12,6 +12,7 @@ contract Auction
     mapping(address => uint) private bets;
 
     address private winner;
+    bool private isWinReceived;
 
     uint8 constant public BET_STEP_PERCENTAGE = 5;
 
@@ -89,6 +90,22 @@ contract Auction
         
         bool success = token.transfer(winner, SELL_AMOUNT);
         require(success);
+        isWinReceived = true;
+    }
+
+    function getRemainingTokens() isOwner external
+    {
+        uint remainingTokens = token.balanceOf(address(this));
+
+        if (!isWinReceived && isApproved)
+        {
+            remainingTokens -= SELL_AMOUNT;
+        }
+        if (remainingTokens > 0)
+        {
+            bool success = token.transfer(owner, remainingTokens);
+            require(success);
+        }
     }
 
     function isStartTimePassed() private view returns(bool)
