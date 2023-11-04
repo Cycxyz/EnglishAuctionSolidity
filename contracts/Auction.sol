@@ -9,6 +9,8 @@ contract Auction
     address private owner;
     IERC20 private token;
 
+    mapping(address => uint) private bets;
+
     uint64 public timeStampBegin;
     uint64 public timeStampEnd;
 
@@ -41,6 +43,11 @@ contract Auction
         require(token.balanceOf(address(this)) >= MINIMAL_AMOUNT, 
             "Money weren't transfered");
         isApproved = true;
+    }
+
+    function myBet() isActiveTime external view returns(uint)
+    {
+        return bets[msg.sender];
     }
 
     function isStartTimePassed() private view returns(bool)
