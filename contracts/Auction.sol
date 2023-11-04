@@ -9,23 +9,28 @@ contract Auction
     address private owner;
     IERC20 private token;
 
-    uint64 timeStampBegin;
-    uint64 timeStampEnd;
+    uint64 public timeStampBegin;
+    uint64 public timeStampEnd;
 
-    bool isApproved;
+    bool public isApproved;
+
+    uint public minimalPrice;
     
-    constructor(IERC20 _token, uint64 _timeStampBegin, uint64 _timeStampEnd)
+    constructor(IERC20 _token, uint64 _timeStampBegin, uint64 _timeStampEnd,
+        uint _minimalPrice)
     {
         owner = msg.sender;
         token = _token;
 
-        require(_timeStampBegin < block.timestamp, "Can't set auction start time"
+        require(_timeStampBegin > block.timestamp, "Can't set auction start time"
             "in the past");
         require(_timeStampBegin < _timeStampEnd, "Can't set end time less then"
             "start time");
 
         timeStampBegin = _timeStampBegin;
         timeStampEnd = _timeStampEnd;
+
+        minimalPrice = _minimalPrice;
     }
 
     function approve() external
