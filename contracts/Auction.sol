@@ -83,6 +83,14 @@ contract Auction
         require(success);
     }
 
+    function getWonTokens() isApprovedInTime isEnded external
+    {
+        require(msg.sender == winner, "Only winner can get tokens");
+        
+        bool success = token.transfer(winner, SELL_AMOUNT);
+        require(success);
+    }
+
     function isStartTimePassed() private view returns(bool)
     {
         return block.timestamp >= timeStampBegin;
