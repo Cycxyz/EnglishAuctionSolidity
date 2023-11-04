@@ -72,6 +72,17 @@ contract Auction
         winner = msg.sender;
     }
 
+    function getBetBack() isApprovedInTime isEnded external
+    {
+        require(msg.sender != owner, "Owner don't have any money here");
+        require(msg.sender != winner, "Winner can't get his bet back");
+        uint senderBet = bets[msg.sender];
+        require(senderBet != 0, "Sender doesn't have any locked money");
+
+        (bool success, ) = msg.sender.call{value: senderBet}("");
+        require(success);
+    }
+
     function isStartTimePassed() private view returns(bool)
     {
         return block.timestamp >= timeStampBegin;
@@ -99,6 +110,12 @@ contract Auction
     {
         require(isApproved && isStartTimePassed(),
          "Auction wasn't started because wasn't approved in time");
+        _;
+    }
+
+    modifier isEnded
+    {
+        require(isEndTimePassed(), "Auction is not ended still");
         _;
     }
 }
