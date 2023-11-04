@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Auction
 {
-    uint32 constant MINIMAL_AMOUNT = 1000; 
+    uint32 constant SELL_AMOUNT = 1000; 
 
     address private owner;
     IERC20 private token;
@@ -43,7 +43,7 @@ contract Auction
         require(!isApproved, "Already approved");
         require(!isStartTimePassed(), 
             "Can't approve anymore, start time passed");
-        require(token.balanceOf(address(this)) >= MINIMAL_AMOUNT, 
+        require(token.balanceOf(address(this)) >= SELL_AMOUNT, 
             "Money weren't transfered");
         isApproved = true;
     }
