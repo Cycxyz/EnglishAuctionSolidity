@@ -14,6 +14,7 @@ contract Auction
     address private winner;
     bool private isWinReceived;
     bool private moneyReceived;
+    bool private lock;
 
     uint8 constant public BET_STEP_PERCENTAGE = 5;
 
@@ -22,6 +23,15 @@ contract Auction
 
     bool public isApproved;
     
+    bool private locked;
+
+    modifier noReentrancy() {
+        require(!locked, "Blocked from reentrancy.");
+        locked = true;
+        _;
+        locked = false;
+    }
+
     constructor(IERC20 _token, uint64 _timeStampBegin, uint64 _timeStampEnd,
         uint _startPrice)
     {
@@ -74,19 +84,19 @@ contract Auction
         winner = msg.sender;
     }
 
-    function getBetBack() isEnded isApprovedInTime external
+    function getBetBack() isEnded isApprovedInTime noReentrancy external
     {
         require(msg.sender != winner, "Winner can't get his bet back");
         uint senderBet = bets[msg.sender];
         require(senderBet != 0, "Sender doesn't have any locked money");
 
         bets[msg.sender] = 0;
-        
+
         (bool success, ) = msg.sender.call{value: senderBet}("");
         require(success);
     }
 
-    function getWonTokens() isEnded isApprovedInTime external
+    function getWonTokens() isEnded isApprovedInTime noReentrancy external
     {
         require(msg.sender == winner, "Only winner can get tokens");
         require(!isWinReceived, "Winner can't get his win twice");
@@ -100,7 +110,7 @@ contract Auction
     // Needed to get tokens from contract account if owner or someone else
     // by mistake sent too much tokens to contract. Also used to get back
     // tokens if noone participated
-    function getRemainingTokens() isEnded isOwner external
+    function getRemainingTokens() isEnded isOwner noReentrancy external
     {
         uint remainingTokens = token.balanceOf(address(this));
 
@@ -115,7 +125,7 @@ contract Auction
         }
     }
 
-    function getOwnersMoney() isOwner isEnded isApprovedInTime external
+    function getOwnersMoney() isOwner isEnded isApprovedInTime noReentrancy external
     {
         require(!moneyReceived, "Owner can't get money twice");
         require(winner != address(0), "No participants");
