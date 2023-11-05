@@ -35,8 +35,8 @@ contract Auction
         timeStampBegin = _timeStampBegin;
         timeStampEnd = _timeStampEnd;
 
-        winner = owner;
-        bets[owner] = _startPrice;
+        winner = address(0);
+        bets[address(0)] = _startPrice;
     }
 
     function approve() external
@@ -65,7 +65,7 @@ contract Auction
     {
         uint newBet = myBet() + msg.value;
 
-        uint nextMinimalBet = winnerBet() * ((100 + BET_STEP_PERCENTAGE) / 100);
+        uint nextMinimalBet = winnerBet() * (100 + BET_STEP_PERCENTAGE) / 100;
 
         require(newBet >= nextMinimalBet, "New bet is too low");
 
@@ -75,7 +75,6 @@ contract Auction
 
     function getBetBack() isApprovedInTime isEnded external
     {
-        require(msg.sender != owner, "Owner don't have any money here");
         require(msg.sender != winner, "Winner can't get his bet back");
         uint senderBet = bets[msg.sender];
         require(senderBet != 0, "Sender doesn't have any locked money");
@@ -87,17 +86,21 @@ contract Auction
     function getWonTokens() isApprovedInTime isEnded external
     {
         require(msg.sender == winner, "Only winner can get tokens");
+        require(!isWinReceived, "Winner can't get his win twice");
         
         bool success = token.transfer(winner, SELL_AMOUNT);
         require(success);
         isWinReceived = true;
     }
 
-    function getRemainingTokens() isOwner external
+    // Needed to get tokens from contract account if owner or someone else
+    // by mistake sent too much tokens to contract. Also used to get back
+    // tokens if noone participated
+    function getRemainingTokens() isEnded isOwner external
     {
         uint remainingTokens = token.balanceOf(address(this));
 
-        if (!isWinReceived && isApproved)
+        if (!isWinReceived && isApproved && winner != address(0))
         {
             remainingTokens -= SELL_AMOUNT;
         }
@@ -110,6 +113,7 @@ contract Auction
 
     function getOwnersMoney() isOwner isApprovedInTime isEnded external
     {
+        require(winner != address(0), "No participants");
         uint ownersMoney = bets[winner];
         (bool success,) = owner.call{value : ownersMoney}("");
         require(success);
@@ -134,7 +138,7 @@ contract Auction
     modifier isActiveTime
     {
         require(isStartTimePassed(), "Auction is not started still");
-        require(isEndTimePassed(), "Auction is already finished");
+        require(!isEndTimePassed(), "Auction is already finished");
         _;
     }
 
