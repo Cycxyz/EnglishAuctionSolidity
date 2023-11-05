@@ -151,3 +151,19 @@ contract Auction
         _;
     }
 }
+
+contract AuctionMock is Auction
+{
+    constructor(IERC20 token) Auction(token, 2**64 - 2, 2**64 - 1, 1000)
+    {}
+
+    function StartAuction() external
+    {
+        timeStampBegin = uint64(block.timestamp);
+    }
+
+    function StopAuction() external
+    {
+        timeStampEnd = uint64(block.timestamp);
+    }
+}
