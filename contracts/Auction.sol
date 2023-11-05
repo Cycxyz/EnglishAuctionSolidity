@@ -74,7 +74,7 @@ contract Auction
         winner = msg.sender;
     }
 
-    function getBetBack() isApprovedInTime isEnded external
+    function getBetBack() isEnded isApprovedInTime external
     {
         require(msg.sender != winner, "Winner can't get his bet back");
         uint senderBet = bets[msg.sender];
@@ -85,7 +85,7 @@ contract Auction
         bets[msg.sender] = 0;
     }
 
-    function getWonTokens() isApprovedInTime isEnded external
+    function getWonTokens() isEnded isApprovedInTime external
     {
         require(msg.sender == winner, "Only winner can get tokens");
         require(!isWinReceived, "Winner can't get his win twice");
@@ -113,7 +113,7 @@ contract Auction
         }
     }
 
-    function getOwnersMoney() isOwner isApprovedInTime isEnded external
+    function getOwnersMoney() isOwner isEnded isApprovedInTime external
     {
         require(!moneyReceived, "Owner can't get money twice");
         require(winner != address(0), "No participants");
