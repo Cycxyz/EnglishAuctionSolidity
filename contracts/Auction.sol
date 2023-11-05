@@ -13,6 +13,7 @@ contract Auction
 
     address private winner;
     bool private isWinReceived;
+    bool private moneyReceived;
 
     uint8 constant public BET_STEP_PERCENTAGE = 5;
 
@@ -39,7 +40,7 @@ contract Auction
         bets[address(0)] = _startPrice;
     }
 
-    function approve() external
+    function approve() isOwner external
     {
         require(!isApproved, "Already approved");
         require(!isStartTimePassed(), 
@@ -81,6 +82,7 @@ contract Auction
 
         (bool success, ) = msg.sender.call{value: senderBet}("");
         require(success);
+        bets[msg.sender] = 0;
     }
 
     function getWonTokens() isApprovedInTime isEnded external
@@ -113,10 +115,12 @@ contract Auction
 
     function getOwnersMoney() isOwner isApprovedInTime isEnded external
     {
+        require(!moneyReceived, "Owner can't get money twice");
         require(winner != address(0), "No participants");
         uint ownersMoney = bets[winner];
         (bool success,) = owner.call{value : ownersMoney}("");
         require(success);
+        moneyReceived = true;
     }
 
     function isStartTimePassed() private view returns(bool)
