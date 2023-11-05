@@ -80,9 +80,10 @@ contract Auction
         uint senderBet = bets[msg.sender];
         require(senderBet != 0, "Sender doesn't have any locked money");
 
+        bets[msg.sender] = 0;
+        
         (bool success, ) = msg.sender.call{value: senderBet}("");
         require(success);
-        bets[msg.sender] = 0;
     }
 
     function getWonTokens() isEnded isApprovedInTime external
@@ -90,9 +91,10 @@ contract Auction
         require(msg.sender == winner, "Only winner can get tokens");
         require(!isWinReceived, "Winner can't get his win twice");
         
+        isWinReceived = true;
+
         bool success = token.transfer(winner, SELL_AMOUNT);
         require(success);
-        isWinReceived = true;
     }
 
     // Needed to get tokens from contract account if owner or someone else
@@ -117,10 +119,12 @@ contract Auction
     {
         require(!moneyReceived, "Owner can't get money twice");
         require(winner != address(0), "No participants");
+        
         uint ownersMoney = bets[winner];
+        moneyReceived = true;
+
         (bool success,) = owner.call{value : ownersMoney}("");
         require(success);
-        moneyReceived = true;
     }
 
     function isStartTimePassed() private view returns(bool)
