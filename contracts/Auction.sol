@@ -108,6 +108,13 @@ contract Auction
         }
     }
 
+    function getOwnersMoney() isOwner isApprovedInTime isEnded external
+    {
+        uint ownersMoney = bets[winner];
+        (bool success,) = owner.call{value : ownersMoney}("");
+        require(success);
+    }
+
     function isStartTimePassed() private view returns(bool)
     {
         return block.timestamp >= timeStampBegin;
