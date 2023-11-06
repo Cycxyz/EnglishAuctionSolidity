@@ -14,17 +14,14 @@ contract Auction
     address private winner;
     bool private isWinReceived;
     bool private moneyReceived;
-    bool private lock;
 
-    uint8 constant public BET_STEP_PERCENTAGE = 5;
+    uint64 public timeStampBegin = 2**64 - 1;
+    uint64 public timeStampEnd = 2**64 - 1;
 
-    uint64 public timeStampBegin;
-    uint64 public timeStampEnd;
-
-    bool public isApproved;
+    bool public isInitialized;
     
-    bool private locked;
 
+    bool private locked;
     modifier noReentrancy() {
         require(!locked, "Blocked from reentrancy.");
         locked = true;
@@ -32,61 +29,55 @@ contract Auction
         locked = false;
     }
 
-    constructor(IERC20 _token, uint64 _timeStampBegin, uint64 _timeStampEnd,
-        uint _startPrice)
+    constructor(IERC20 _token, uint _startPrice)
     {
-        require(_timeStampBegin > block.timestamp, "Can't set auction start time"
-            "in the past");
-        require(_timeStampBegin < _timeStampEnd, "Can't set end time less then"
-            "start time");
-
         owner = msg.sender;
         token = _token;
-
-        timeStampBegin = _timeStampBegin;
-        timeStampEnd = _timeStampEnd;
 
         winner = address(0);
         bets[address(0)] = _startPrice;
     }
 
-    function approve() isOwner noReentrancy external
+    function Initialize(uint64 _timeStampBegin, uint64 _timeStampEnd) isOwner noReentrancy public
     {
-        require(!isApproved, "Already approved");
-        require(!isStartTimePassed(), 
-            "Can't approve anymore, start time passed");
+        require(!isInitialized, "Already approved");
+        require(_timeStampBegin > block.timestamp, "Can't set auction start time"
+            "in the past");
+        require(_timeStampBegin < _timeStampEnd, "Can't set end time less then"
+            "start time");
 
         bool isSuccess = token.transferFrom(owner, address(this), SELL_AMOUNT);
         require(isSuccess, "Owner didn't approve enough money for contract");
 
-        isApproved = true;
+        timeStampBegin = _timeStampBegin;
+        timeStampEnd = _timeStampEnd;
+
+        isInitialized = true;
     }
 
-    function myBet() isActiveTime isApprovedInTime 
+    function myBet() isAuctionInitialized isActiveTime 
         public view returns(uint)
     {
         return bets[msg.sender];
     }
 
-    function winnerBet() isActiveTime isApprovedInTime 
+    function winnerBet() isAuctionInitialized isActiveTime 
         public view returns(uint)
     {
         return bets[winner];
     }
 
-    function increaseMyBet() isActiveTime isApprovedInTime external payable
+    function increaseMyBet() isAuctionInitialized isActiveTime external payable
     {
         uint newBet = myBet() + msg.value;
 
-        uint nextMinimalBet = winnerBet() * (100 + BET_STEP_PERCENTAGE) / 100;
-
-        require(newBet >= nextMinimalBet, "New bet is too low");
+        require(newBet > winnerBet(), "New bet is too low");
 
         bets[msg.sender] = newBet;
         winner = msg.sender;
     }
 
-    function getBetBack() isEnded isApprovedInTime noReentrancy external
+    function getBetBack() isAuctionInitialized isEnded noReentrancy external
     {
         require(msg.sender != winner, "Winner can't get his bet back");
         uint senderBet = bets[msg.sender];
@@ -98,7 +89,7 @@ contract Auction
         require(success);
     }
 
-    function getWonTokens() isEnded isApprovedInTime noReentrancy external
+    function getWonTokens() isAuctionInitialized isEnded noReentrancy external
     {
         address sendTokensTo = address(0);
 
@@ -110,23 +101,23 @@ contract Auction
         {
             sendTokensTo = owner;
         }
-        else 
+        else
         {
             revert("Only winner can get tokens");
         }
         require(!isWinReceived, "Impossible to get tokens twice");
-        
+
         isWinReceived = true;
 
         bool success = token.transfer(sendTokensTo, SELL_AMOUNT);
         require(success);
     }
 
-    function getOwnersMoney() isOwner isEnded isApprovedInTime noReentrancy external
+    function getOwnersMoney() isAuctionInitialized isOwner isEnded noReentrancy external
     {
         require(!moneyReceived, "Owner can't get money twice");
         require(winner != address(0), "No participants");
-        
+
         uint ownersMoney = bets[winner];
         moneyReceived = true;
 
@@ -157,24 +148,28 @@ contract Auction
         _;
     }
 
-    modifier isApprovedInTime
-    {
-        require(isApproved && isStartTimePassed(),
-         "Auction wasn't started because wasn't approved in time");
-        _;
-    }
-
     modifier isEnded
     {
         require(isEndTimePassed(), "Auction is not ended still");
+        _;
+    }
+
+    modifier isAuctionInitialized
+    {
+        require(isInitialized, "Auction is not initialized");
         _;
     }
 }
 
 contract AuctionMock is Auction
 {
-    constructor(IERC20 token) Auction(token, 2**64 - 2, 2**64 - 1, 1000)
+    constructor(IERC20 token) Auction(token, 1000)
     {}
+
+    function InitializeMock() external
+    {
+        Initialize(2**64 - 2, 2**64 - 1);
+    }
 
     function StartAuction() external
     {
