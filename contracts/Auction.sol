@@ -40,7 +40,7 @@ contract Auction
 
     function Initialize(uint64 _timeStampBegin, uint64 _timeStampEnd) isOwner noReentrancy public
     {
-        require(!isInitialized, "Already approved");
+        require(!isInitialized, "Already initialized");
         require(_timeStampBegin > block.timestamp, "Can't set auction start time"
             "in the past");
         require(_timeStampBegin < _timeStampEnd, "Can't set end time less then"
