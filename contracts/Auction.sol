@@ -50,7 +50,7 @@ contract Auction
         bets[address(0)] = _startPrice;
     }
 
-    function approve() isOwner external
+    function approve() isOwner noReentrancy external
     {
         require(!isApproved, "Already approved");
         require(!isStartTimePassed(), 
