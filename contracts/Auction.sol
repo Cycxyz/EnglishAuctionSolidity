@@ -11,7 +11,7 @@ contract Auction
 
     mapping(address => uint) private bets;
 
-    address private winner;
+    address public winner;
     bool private isWinReceived;
     bool private moneyReceived;
 
