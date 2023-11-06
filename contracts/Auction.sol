@@ -55,9 +55,10 @@ contract Auction
         require(!isApproved, "Already approved");
         require(!isStartTimePassed(), 
             "Can't approve anymore, start time passed");
-        require(token.balanceOf(address(this)) >= SELL_AMOUNT, 
-            "Money weren't transfered");
         isApproved = true;
+
+        bool isSuccess = token.transferFrom(owner, address(this), SELL_AMOUNT);
+        require(isSuccess, "Owner didn't approve enough money for contract");
     }
 
     function myBet() isActiveTime isApprovedInTime 
@@ -98,31 +99,26 @@ contract Auction
 
     function getWonTokens() isEnded isApprovedInTime noReentrancy external
     {
-        require(msg.sender == winner, "Only winner can get tokens");
-        require(!isWinReceived, "Winner can't get his win twice");
+        address sendTokensTo = address(0);
+
+        if (msg.sender == winner)
+        {
+            sendTokensTo = winner;
+        }
+        else if(winner == address(0))
+        {
+            sendTokensTo = owner;
+        }
+        else 
+        {
+            revert("Only winner can get tokens");
+        }
+        require(!isWinReceived, "Impossible to get tokens twice");
         
         isWinReceived = true;
 
-        bool success = token.transfer(winner, SELL_AMOUNT);
+        bool success = token.transfer(sendTokensTo, SELL_AMOUNT);
         require(success);
-    }
-
-    // Needed to get tokens from contract account if owner or someone else
-    // by mistake sent too much tokens to contract. Also used to get back
-    // tokens if noone participated
-    function getRemainingTokens() isEnded isOwner noReentrancy external
-    {
-        uint remainingTokens = token.balanceOf(address(this));
-
-        if (!isWinReceived && isApproved && winner != address(0))
-        {
-            remainingTokens -= SELL_AMOUNT;
-        }
-        if (remainingTokens > 0)
-        {
-            bool success = token.transfer(owner, remainingTokens);
-            require(success);
-        }
     }
 
     function getOwnersMoney() isOwner isEnded isApprovedInTime noReentrancy external
