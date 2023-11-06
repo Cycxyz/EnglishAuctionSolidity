@@ -55,10 +55,11 @@ contract Auction
         require(!isApproved, "Already approved");
         require(!isStartTimePassed(), 
             "Can't approve anymore, start time passed");
-        isApproved = true;
 
         bool isSuccess = token.transferFrom(owner, address(this), SELL_AMOUNT);
         require(isSuccess, "Owner didn't approve enough money for contract");
+
+        isApproved = true;
     }
 
     function myBet() isActiveTime isApprovedInTime 
