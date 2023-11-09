@@ -41,9 +41,9 @@ contract Auction
     function Initialize(uint64 _timeStampBegin, uint64 _timeStampEnd) isOwner noReentrancy public
     {
         require(!isInitialized, "Already initialized");
-        require(_timeStampBegin > block.timestamp, "Can't set auction start time"
+        require(_timeStampBegin > block.timestamp, "Can't set auction start time "
             "in the past");
-        require(_timeStampBegin < _timeStampEnd, "Can't set end time less then"
+        require(_timeStampBegin < _timeStampEnd, "Can't set end time less then "
             "start time");
 
         bool isSuccess = token.transferFrom(owner, address(this), SELL_AMOUNT);
@@ -158,26 +158,5 @@ contract Auction
     {
         require(isInitialized, "Auction is not initialized");
         _;
-    }
-}
-
-contract AuctionMock is Auction
-{
-    constructor(IERC20 token) Auction(token, 1000)
-    {}
-
-    function InitializeMock() external
-    {
-        Initialize(2**64 - 2, 2**64 - 1);
-    }
-
-    function StartAuction() external
-    {
-        timeStampBegin = uint64(block.timestamp);
-    }
-
-    function StopAuction() external
-    {
-        timeStampEnd = uint64(block.timestamp);
     }
 }
